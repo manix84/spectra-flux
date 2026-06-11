@@ -1,4 +1,4 @@
-# Canvas Wave Spectrum
+# SpectraFlux
 
 A full-screen real-time audio visualizer inspired by Windows Media Player, Winamp, MilkDrop, projectM, and early 2000s desktop music players.
 
