@@ -48,3 +48,25 @@ test('loads fixture audio through file input without serving test assets publicl
   const publicAudioResponse = await page.request.get('/test-audio/file_example_MP3_5MG.mp3');
   expect(publicAudioResponse.headers()['content-type']).not.toContain('audio');
 });
+
+test('loads audio when dropped onto the visualizer', async ({ page }) => {
+  await page.goto('/');
+
+  const dataTransfer = await page.evaluateHandle(() => {
+    const transfer = new DataTransfer();
+    const file = new File([new Uint8Array([73, 68, 51, 4, 0, 0, 0, 0, 0, 0])], 'dropped-test.mp3', {
+      type: 'audio/mpeg',
+    });
+    transfer.items.add(file);
+    return transfer;
+  });
+
+  await page.dispatchEvent('main', 'dragenter', { dataTransfer });
+  await expect(page.getByText('Drop audio to load')).toBeVisible();
+
+  await page.dispatchEvent('main', 'drop', { dataTransfer });
+
+  await expect(page.getByText(/dropped-test\.mp3/)).toBeVisible();
+  await expect(page.getByText(/Playing|Paused/)).toBeVisible();
+  await expect(page.getByText('Drop audio to load')).toBeHidden();
+});

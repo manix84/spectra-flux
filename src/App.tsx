@@ -37,6 +37,21 @@ const colorModes: Array<{ value: ColorMode; label: string }> = [
   { value: 'ember', label: 'Ember' },
 ];
 
+const audioFileExtensions = /\.(aac|flac|m4a|mp3|oga|ogg|opus|wav|webm)$/i;
+
+function isAudioFile(file: File) {
+  return file.type.startsWith('audio/') || audioFileExtensions.test(file.name);
+}
+
+function hasFileDrag(event: React.DragEvent<HTMLElement>) {
+  const { items, types } = event.dataTransfer;
+  return Array.from(items).some((item) => item.kind === 'file') || Array.from(types).includes('Files');
+}
+
+function getDroppedAudioFile(fileList: FileList) {
+  return Array.from(fileList).find(isAudioFile) ?? null;
+}
+
 function App() {
   useScreenWakeLock();
 
@@ -46,10 +61,12 @@ function App() {
   const [particleCount, setParticleCount] = useState(900);
   const [showChrome, setShowChrome] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isAudioDragActive, setIsAudioDragActive] = useState(false);
   const [fps, setFps] = useState(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const drawerToggleRef = useRef<HTMLButtonElement | null>(null);
   const openedFromFloatingToggleRef = useRef(false);
+  const dragDepthRef = useRef(0);
   const {
     audioElementRef,
     audioFrame,
@@ -76,6 +93,56 @@ function App() {
         void connectFile(file);
       }
       event.target.value = '';
+    },
+    [connectFile],
+  );
+
+  const handleDragEnter = useCallback((event: React.DragEvent<HTMLElement>) => {
+    if (!hasFileDrag(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    dragDepthRef.current += 1;
+    setIsAudioDragActive(true);
+  }, []);
+
+  const handleDragOver = useCallback((event: React.DragEvent<HTMLElement>) => {
+    if (!hasFileDrag(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    setIsAudioDragActive(true);
+  }, []);
+
+  const handleDragLeave = useCallback((event: React.DragEvent<HTMLElement>) => {
+    if (!hasFileDrag(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) {
+      setIsAudioDragActive(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    (event: React.DragEvent<HTMLElement>) => {
+      if (!hasFileDrag(event)) {
+        return;
+      }
+
+      event.preventDefault();
+      dragDepthRef.current = 0;
+      setIsAudioDragActive(false);
+
+      const file = getDroppedAudioFile(event.dataTransfer.files);
+      if (file) {
+        void connectFile(file);
+      }
     },
     [connectFile],
   );
@@ -124,7 +191,14 @@ function App() {
   }, [showChrome]);
 
   return (
-    <main className="app-shell" onDoubleClick={() => setShowChrome((value) => !value)}>
+    <main
+      className="app-shell"
+      onDoubleClick={() => setShowChrome((value) => !value)}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       <VisualizerCanvas
         audioFrameRef={audioFrameRef}
         colorMode={colorMode}
@@ -136,6 +210,13 @@ function App() {
 
       <audio ref={audioElementRef} className="audio-element" controls={false} />
       <input ref={fileInputRef} className="visually-hidden" type="file" accept="audio/*" onChange={handleFile} />
+
+      <div className={`drop-target-overlay ${isAudioDragActive ? 'is-active' : ''}`} aria-hidden={!isAudioDragActive}>
+        <div className="drop-target-panel">
+          <FileAudio size={34} />
+          <span>Drop audio to load</span>
+        </div>
+      </div>
 
       {!showChrome ? (
         <button

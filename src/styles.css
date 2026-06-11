@@ -71,6 +71,53 @@ button {
   clip-path: inset(50%);
 }
 
+.drop-target-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at center, rgb(36 219 255 / 0.16), transparent 44%),
+    rgb(2 4 10 / 0.48);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 140ms ease;
+}
+
+.drop-target-overlay.is-active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.drop-target-panel {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(420px, 100%);
+  padding: 18px 20px;
+  color: #f8fbff;
+  border: 1px solid rgb(255 255 255 / 0.26);
+  border-radius: 8px;
+  background: rgb(9 13 24 / 0.82);
+  box-shadow: 0 24px 90px rgb(0 0 0 / 0.42);
+  backdrop-filter: blur(18px) saturate(1.35);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.drop-target-panel svg {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+
+.drop-target-panel span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .control-surface {
   position: fixed;
   left: max(14px, env(safe-area-inset-left));
