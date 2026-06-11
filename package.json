@@ -1,7 +1,7 @@
 {
   "name": "spectra-flux",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "A full-screen classic audio visualizer inspired by Winamp, MilkDrop, and Windows Media Player.",
   "scripts": {
@@ -13,6 +13,8 @@
     "test:dist": "node tests/assert-dist-excludes-test-audio.mjs",
     "test:e2e": "playwright test",
     "typecheck": "tsc -b",
+    "prepare": "node scripts/install-git-hooks.mjs",
+    "version:precommit": "node scripts/precommit-version-bump.mjs",
     "version:bump": "node scripts/bump-version.mjs auto",
     "version:bump:patch": "node scripts/bump-version.mjs patch",
     "version:bump:minor": "node scripts/bump-version.mjs minor",

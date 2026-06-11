@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+set -eu
+
+PATH="/usr/local/bin:$PATH"
+
+npm run version:precommit
