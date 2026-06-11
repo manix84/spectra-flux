@@ -5,6 +5,7 @@ const fftSize = 2048;
 const smoothingTimeConstant = 0.76;
 const beatHoldMs = 220;
 const beatThreshold = 1.35;
+const telemetryIntervalMs = 125;
 
 const emptyFrame: AudioFrame = {
   volume: 0,
@@ -38,7 +39,9 @@ export function useAudioEngine() {
   const animationRef = useRef<number | null>(null);
   const lowHistoryRef = useRef<number[]>([]);
   const lastBeatRef = useRef(0);
+  const lastTelemetryRef = useRef(0);
   const smoothedRef = useRef({ volume: 0, bass: 0, mid: 0, treble: 0 });
+  const audioFrameRef = useRef<AudioFrame>(emptyFrame);
   const [audioFrame, setAudioFrame] = useState<AudioFrame>(emptyFrame);
   const [inputLabel, setInputLabel] = useState('');
   const [status, setStatus] = useState<AudioStatus>('Idle');
@@ -110,12 +113,17 @@ export function useAudioEngine() {
         treble: previous.treble + (target.treble - previous.treble) * smoothing,
       };
 
-      setAudioFrame({
+      audioFrameRef.current = {
         ...smoothedRef.current,
         beat,
-        frequencyBins: new Uint8Array(frequencyBins),
-        waveform: new Uint8Array(waveform),
-      });
+        frequencyBins,
+        waveform,
+      };
+
+      if (beat || now - lastTelemetryRef.current > telemetryIntervalMs) {
+        lastTelemetryRef.current = now;
+        setAudioFrame(audioFrameRef.current);
+      }
 
       animationRef.current = requestAnimationFrame(sample);
     };
@@ -248,6 +256,7 @@ export function useAudioEngine() {
   return {
     audioElementRef,
     audioFrame,
+    audioFrameRef,
     inputLabel,
     isPlaying,
     status,

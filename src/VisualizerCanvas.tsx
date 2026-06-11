@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
+import type { RefObject } from 'react';
 import { backgroundGradient, getColor } from './visualizer/colors';
 import type { AudioFrame, ColorMode, VisualMode } from './visualizer/types';
 
 interface VisualizerCanvasProps {
-  audioFrame: AudioFrame;
+  audioFrameRef: RefObject<AudioFrame>;
   colorMode: ColorMode;
+  onFpsChange: (fps: number) => void;
   particleCount: number;
   sensitivity: number;
   visualMode: VisualMode;
@@ -22,7 +24,7 @@ interface Particle {
 const idlePulse = (time: number) => 0.08 + Math.sin(time * 0.0012) * 0.025;
 
 function resizeCanvas(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
   const width = Math.floor(canvas.clientWidth * dpr);
   const height = Math.floor(canvas.clientHeight * dpr);
   if (canvas.width !== width || canvas.height !== height) {
@@ -38,15 +40,27 @@ function frequencyAt(data: Uint8Array, index: number, total: number) {
   return data[bin] / 255;
 }
 
-function clearScene(context: CanvasRenderingContext2D, width: number, height: number, colorMode: ColorMode, fade: number) {
+function clearScene(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  colorMode: ColorMode,
+  fade: number,
+  gradientRef: { key: string; value: CanvasGradient | null },
+) {
   const colors = backgroundGradient(colorMode);
-  const gradient = context.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, colors[0]);
-  gradient.addColorStop(0.48, colors[1]);
-  gradient.addColorStop(1, colors[2]);
+  const key = `${colorMode}:${width}:${height}`;
+  if (gradientRef.key !== key || !gradientRef.value) {
+    const gradient = context.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, colors[0]);
+    gradient.addColorStop(0.48, colors[1]);
+    gradient.addColorStop(1, colors[2]);
+    gradientRef.key = key;
+    gradientRef.value = gradient;
+  }
   context.globalCompositeOperation = 'source-over';
   context.globalAlpha = fade;
-  context.fillStyle = gradient;
+  context.fillStyle = gradientRef.value;
   context.fillRect(0, 0, width, height);
   context.globalAlpha = 1;
 }
@@ -60,7 +74,7 @@ function drawSpectrum(
   time: number,
   sensitivity: number,
 ) {
-  const bars = Math.min(128, Math.floor(width / 8));
+  const bars = Math.min(96, Math.floor(width / 10));
   const gap = 2;
   const barWidth = width / bars;
   const floor = height * 0.82;
@@ -98,7 +112,7 @@ function drawOscilloscope(
   context.shadowColor = getColor(colorMode, time * 0.00012, 1);
   for (let pass = 0; pass < 2; pass += 1) {
     context.beginPath();
-    for (let index = 0; index < frame.waveform.length; index += 1) {
+    for (let index = 0; index < frame.waveform.length; index += 2) {
       const x = (index / (frame.waveform.length - 1)) * width;
       const sample = (frame.waveform[index] - 128) / 128;
       const mirrored = pass === 0 ? sample : -sample;
@@ -129,7 +143,7 @@ function drawRadial(
   const centerX = width / 2;
   const centerY = height / 2;
   const baseRadius = Math.min(width, height) * (0.16 + frame.bass * 0.055);
-  const bars = 180;
+  const bars = width < 760 ? 96 : 128;
   context.save();
   context.translate(centerX, centerY);
   context.rotate(time * 0.00006);
@@ -210,9 +224,7 @@ function drawParticles(
     const size = particle.size * (1 + particle.energy * 4 + (frame.beat ? 1.5 : 0));
     context.fillStyle = getColor(colorMode, particle.angle / (Math.PI * 2) + time * 0.00008, particle.energy);
     context.globalAlpha = Math.min(0.86, 0.18 + particle.energy * 0.72);
-    context.beginPath();
-    context.arc(x, y, size, 0, Math.PI * 2);
-    context.fill();
+    context.fillRect(x - size * 0.5, y - size * 0.5, size, size);
   }
   context.globalAlpha = 1;
   context.globalCompositeOperation = 'source-over';
@@ -265,15 +277,18 @@ function drawAbstract(
   context.globalCompositeOperation = 'source-over';
 }
 
-export function VisualizerCanvas({ audioFrame, colorMode, particleCount, sensitivity, visualMode }: VisualizerCanvasProps) {
+export function VisualizerCanvas({
+  audioFrameRef,
+  colorMode,
+  onFpsChange,
+  particleCount,
+  sensitivity,
+  visualMode,
+}: VisualizerCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const frameRef = useRef(audioFrame);
   const optionsRef = useRef({ colorMode, particleCount, sensitivity, visualMode });
   const particlesRef = useRef<Particle[]>([]);
-
-  useEffect(() => {
-    frameRef.current = audioFrame;
-  }, [audioFrame]);
+  const gradientRef = useRef<{ key: string; value: CanvasGradient | null }>({ key: '', value: null });
 
   useEffect(() => {
     optionsRef.current = { colorMode, particleCount, sensitivity, visualMode };
@@ -287,14 +302,23 @@ export function VisualizerCanvas({ audioFrame, colorMode, particleCount, sensiti
     }
 
     let animation = 0;
+    let frames = 0;
+    let lastFpsUpdate = performance.now();
     const render = (time: number) => {
+      frames += 1;
+      if (time - lastFpsUpdate >= 1000) {
+        onFpsChange(Math.round((frames * 1000) / (time - lastFpsUpdate)));
+        frames = 0;
+        lastFpsUpdate = time;
+      }
+
       resizeCanvas(canvas, context);
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
-      const frame = frameRef.current;
+      const frame = audioFrameRef.current;
       const options = optionsRef.current;
       const fade = options.visualMode === 'particles' || options.visualMode === 'abstract' ? 0.2 : 0.42;
-      clearScene(context, width, height, options.colorMode, fade);
+      clearScene(context, width, height, options.colorMode, fade, gradientRef.current);
 
       if (frame.beat) {
         context.globalAlpha = 0.16;
@@ -321,7 +345,7 @@ export function VisualizerCanvas({ audioFrame, colorMode, particleCount, sensiti
 
     animation = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animation);
-  }, []);
+  }, [audioFrameRef, onFpsChange]);
 
   return <canvas ref={canvasRef} className="visualizer-canvas" aria-label="Audio visualizer canvas" />;
 }

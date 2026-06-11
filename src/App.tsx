@@ -37,13 +37,15 @@ function App() {
   const [visualMode, setVisualMode] = useState<VisualMode>('radial');
   const [colorMode, setColorMode] = useState<ColorMode>('synthwave');
   const [sensitivity, setSensitivity] = useState(1.12);
-  const [particleCount, setParticleCount] = useState(1400);
+  const [particleCount, setParticleCount] = useState(900);
   const [showChrome, setShowChrome] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fps, setFps] = useState(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const {
     audioElementRef,
     audioFrame,
+    audioFrameRef,
     inputLabel,
     isPlaying,
     status,
@@ -87,8 +89,9 @@ function App() {
   return (
     <main className="app-shell" onDoubleClick={() => setShowChrome((value) => !value)}>
       <VisualizerCanvas
-        audioFrame={audioFrame}
+        audioFrameRef={audioFrameRef}
         colorMode={colorMode}
+        onFpsChange={setFps}
         particleCount={particleCount}
         sensitivity={sensitivity}
         visualMode={visualMode}
@@ -173,7 +176,7 @@ function App() {
             <input
               type="range"
               min="300"
-              max="3200"
+              max="2200"
               step="100"
               value={particleCount}
               onChange={(event) => setParticleCount(Number(event.target.value))}
@@ -186,6 +189,7 @@ function App() {
           <span>Bass {Math.round(audioFrame.bass * 100)}%</span>
           <span>Mid {Math.round(audioFrame.mid * 100)}%</span>
           <span>Treble {Math.round(audioFrame.treble * 100)}%</span>
+          <span>{fps} FPS</span>
           {audioFrame.beat ? <strong>Beat</strong> : null}
         </div>
 
