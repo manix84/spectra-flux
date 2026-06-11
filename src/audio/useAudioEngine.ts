@@ -51,6 +51,8 @@ export function useAudioEngine() {
   const [inputLabel, setInputLabel] = useState('');
   const [status, setStatus] = useState<AudioStatus>('Idle');
   const [error, setError] = useState('');
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   const isPlaying = useMemo(() => status === 'Playing' || status === 'Listening', [status]);
 
@@ -167,6 +169,9 @@ export function useAudioEngine() {
       objectUrlRef.current = URL.createObjectURL(file);
       audio.src = objectUrlRef.current;
       audio.loop = true;
+      audio.currentTime = 0;
+      setCurrentTime(0);
+      setDuration(0);
       setInputLabel(file.name);
       setStatus('Paused');
       startSampling();
@@ -187,6 +192,8 @@ export function useAudioEngine() {
       setError('');
       stopStream();
       audioElementRef.current?.pause();
+      setCurrentTime(0);
+      setDuration(0);
       const { context, analyser } = ensureContext();
       const streamSource = context.createMediaStreamSource(stream);
       streamSource.connect(analyser);
@@ -260,6 +267,39 @@ export function useAudioEngine() {
     }
   }, [inputLabel]);
 
+  const seekTo = useCallback((time: number) => {
+    const audio = audioElementRef.current;
+    if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) {
+      return;
+    }
+
+    const nextTime = Math.min(Math.max(time, 0), audio.duration);
+    audio.currentTime = nextTime;
+    setCurrentTime(nextTime);
+  }, []);
+
+  useEffect(() => {
+    const audio = audioElementRef.current;
+    if (!audio) {
+      return undefined;
+    }
+
+    const syncTime = () => setCurrentTime(audio.currentTime);
+    const syncDuration = () => setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
+
+    audio.addEventListener('timeupdate', syncTime);
+    audio.addEventListener('loadedmetadata', syncDuration);
+    audio.addEventListener('durationchange', syncDuration);
+    audio.addEventListener('emptied', syncDuration);
+
+    return () => {
+      audio.removeEventListener('timeupdate', syncTime);
+      audio.removeEventListener('loadedmetadata', syncDuration);
+      audio.removeEventListener('durationchange', syncDuration);
+      audio.removeEventListener('emptied', syncDuration);
+    };
+  }, []);
+
   useEffect(() => {
     return () => {
       if (animationRef.current !== null) {
@@ -281,9 +321,12 @@ export function useAudioEngine() {
     isPlaying,
     status,
     error,
+    currentTime,
+    duration,
     connectFile,
     connectMicrophone,
     connectSystemAudio,
+    seekTo,
     togglePlayback,
   };
 }

@@ -52,6 +52,18 @@ function getDroppedAudioFile(fileList: FileList) {
   return Array.from(fileList).find(isAudioFile) ?? null;
 }
 
+function formatPlaybackTime(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return '0:00';
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60)
+    .toString()
+    .padStart(2, '0');
+  return `${minutes}:${remainingSeconds}`;
+}
+
 function App() {
   useScreenWakeLock();
 
@@ -75,11 +87,15 @@ function App() {
     isPlaying,
     status,
     error,
+    currentTime,
+    duration,
     connectFile,
     connectMicrophone,
     connectSystemAudio,
+    seekTo,
     togglePlayback,
   } = useAudioEngine();
+  const canSeek = duration > 0;
 
   const currentMode = useMemo(
     () => visualModes.find((mode) => mode.value === visualMode) ?? visualModes[0],
@@ -256,33 +272,74 @@ function App() {
         </div>
 
         <div className="control-body">
-          <section className="control-group" aria-labelledby="sources-heading">
-            <h2 id="sources-heading">Audio Source</h2>
-            <div className="primary-actions">
-              <button className="icon-button primary" type="button" onClick={() => fileInputRef.current?.click()} title="Load audio file">
-                <FileAudio size={20} />
-              </button>
-              <button className="icon-button" type="button" onClick={() => void connectMicrophone()} title="Use microphone; browser permission required">
-                <Mic size={20} />
-              </button>
+          <section className="control-group" aria-labelledby="playback-heading">
+            <h2 id="playback-heading">Playback</h2>
+            <div className="playback-controls">
               <button
-                className="icon-button"
+                aria-label={isPlaying ? 'Pause audio' : 'Play audio'}
+                className="icon-button primary playback-toggle"
                 type="button"
-                onClick={() => void connectSystemAudio()}
-                title="Capture tab or system audio; browser permission required"
+                onClick={() => void togglePlayback()}
+                title={isPlaying ? 'Pause' : 'Play'}
               >
-                <MonitorSpeaker size={20} />
+                {isPlaying ? <Pause size={22} /> : <Play size={22} />}
               </button>
-              <button className="icon-button" type="button" onClick={() => void togglePlayback()} title={isPlaying ? 'Pause' : 'Play'}>
-                {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-              </button>
+              <label className="seek-control">
+                <span className="visually-hidden">Playback position</span>
+                <input
+                  type="range"
+                  min="0"
+                  max={canSeek ? duration : 1}
+                  step="0.1"
+                  value={canSeek ? Math.min(currentTime, duration) : 0}
+                  disabled={!canSeek}
+                  onChange={(event) => seekTo(Number(event.target.value))}
+                />
+              </label>
+              <span className="time-readout" aria-live="off">
+                {formatPlaybackTime(currentTime)} / {formatPlaybackTime(duration)}
+              </span>
               <button
+                aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
                 className="icon-button"
                 type="button"
                 onClick={handleFullscreen}
                 title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
               >
                 <Fullscreen size={20} />
+              </button>
+            </div>
+          </section>
+
+          <section className="control-group" aria-labelledby="sources-heading">
+            <h2 id="sources-heading">Audio Source</h2>
+            <div className="primary-actions">
+              <button
+                aria-label="Load audio file"
+                className="icon-button primary"
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                title="Load audio file"
+              >
+                <FileAudio size={20} />
+              </button>
+              <button
+                aria-label="Use microphone"
+                className="icon-button"
+                type="button"
+                onClick={() => void connectMicrophone()}
+                title="Use microphone; browser permission required"
+              >
+                <Mic size={20} />
+              </button>
+              <button
+                aria-label="Capture tab or system audio"
+                className="icon-button"
+                type="button"
+                onClick={() => void connectSystemAudio()}
+                title="Capture tab or system audio; browser permission required"
+              >
+                <MonitorSpeaker size={20} />
               </button>
             </div>
           </section>
