@@ -152,16 +152,19 @@ vec3 background(vec2 uv) {
 }
 
 vec3 spectrum(vec2 uv) {
+  float skippedBars = 5.0;
   float bars = u_resolution.x < 760.0 ? 48.0 : 72.0;
+  float visibleBars = bars - skippedBars;
   float index = floor(uv.x * bars);
+  float sampleIndex = index + skippedBars;
   float local = fract(uv.x * bars);
-  float energy = sampleFreq(index / max(1.0, bars - 1.0));
+  float energy = sampleFreq(sampleIndex / max(1.0, bars - 1.0));
   float level = saturate(pow(energy, 0.86) + 0.03);
   float body = step(uv.y, level * 0.76 + 0.08);
   float gap = smoothstep(0.08, 0.18, local) * (1.0 - smoothstep(0.82, 0.92, local));
   float peakY = level * 0.76 + 0.105 + u_bass * 0.035;
   float peak = 1.0 - smoothstep(0.0, 0.012, abs(uv.y - peakY));
-  vec3 color = palette(index / bars + u_time * 0.035, level);
+  vec3 color = palette(index / max(1.0, visibleBars) - u_time * 0.035, level);
   return color * gap * (body * 0.92 + peak * 0.65);
 }
 
@@ -171,8 +174,8 @@ vec3 oscilloscope(vec2 uv) {
   float mirroredY = 1.0 - y;
   float line = 1.0 - smoothstep(0.0, 0.012 + u_treble * 0.018, abs(uv.y - y));
   float mirror = 1.0 - smoothstep(0.0, 0.010 + u_treble * 0.014, abs(uv.y - mirroredY));
-  vec3 primary = palette(u_time * 0.045, 1.0);
-  vec3 secondary = palette(u_time * 0.045 + 0.18, 0.7);
+  vec3 primary = palette(uv.x - u_time * 0.045, 1.0);
+  vec3 secondary = palette(uv.x - u_time * 0.045 + 0.18, 0.7);
   return primary * line + secondary * mirror * 0.48;
 }
 
@@ -180,36 +183,25 @@ vec3 radial(vec2 uv) {
   vec2 p = uv * 2.0 - 1.0;
   p.x *= u_resolution.x / u_resolution.y;
   float radius = length(p);
-  float angle = atan(p.y, p.x) / (2.0 * PI) + 0.5 + u_time * 0.032;
-  float bars = u_resolution.x < 760.0 ? 72.0 : 96.0;
+  float angle = fract(atan(p.y, p.x) / (2.0 * PI) + 0.5 + u_time * 0.032);
+  float skippedBars = 5.0;
+  float bars = u_resolution.x < 760.0 ? 48.0 : 72.0;
+  float visibleBars = bars - skippedBars;
   float index = floor(angle * bars);
+  float sampleIndex = index + skippedBars;
   float local = fract(angle * bars);
-  float phase = index / max(1.0, bars - 1.0);
+  float phase = sampleIndex / max(1.0, bars - 1.0);
 
-  float audioEnergy = sampleFreq(phase);
-  float previousEnergy = sampleFreq(max(0.0, index - 1.0) / max(1.0, bars - 1.0));
-  float nextEnergy = sampleFreq(min(bars - 1.0, index + 1.0) / max(1.0, bars - 1.0));
-  float spectrumEnergy = audioEnergy * 0.78 + previousEnergy * 0.11 + nextEnergy * 0.11;
-
-  float bassBand = smoothstep(0.34, 0.0, phase);
-  float midBand = 1.0 - smoothstep(0.20, 0.58, abs(phase - 0.42));
-  float trebleBand = smoothstep(0.46, 1.0, phase);
-  float analysedBandEnergy = (u_bass * bassBand + u_mid * midBand + u_treble * trebleBand) * u_sensitivity;
-
-  float travelling = 0.5 + 0.5 * sin(index * 0.42 - u_time * 5.4 + sin(u_time * 0.7) * 1.6);
-  float idleEnergy = 0.035 + travelling * 0.025;
-  float drivenEnergy = pow(saturate(spectrumEnergy * 16.0 + analysedBandEnergy * 9.0), 0.52);
-  float energy = max(idleEnergy, drivenEnergy);
-
-  float inner = 0.19 + u_bass * 0.010 + sin(u_time * 1.4) * 0.002;
-  float outer = inner + 0.035 + energy * 0.62;
-  float ring = smoothstep(inner - 0.010, inner + 0.004, radius) * (1.0 - smoothstep(outer, outer + 0.012, radius));
-  float barShape = smoothstep(0.12, 0.24, local) * (1.0 - smoothstep(0.76, 0.88, local));
-  float coreRadius = inner * (1.05 + u_volume * 0.35 + u_bass * 0.18 + sin(u_time * 1.1) * 0.018);
-  float core = 1.0 - smoothstep(0.0, coreRadius, radius);
-  float halo = exp(-abs(radius - outer) * 18.0) * (0.018 + energy * 0.11);
-  vec3 color = palette(index / bars + u_time * 0.075, energy);
-  return color * ring * barShape * (0.70 + energy * 1.35) + color * halo + palette(u_time * 0.05, 1.0) * core * 0.36;
+  float energy = sampleFreq(phase);
+  float level = saturate(pow(energy, 0.86) + 0.03);
+  float inner = 0.21;
+  float barHeight = 0.04 + level * 0.58;
+  float outer = inner + barHeight;
+  float radialBar = smoothstep(inner - 0.005, inner + 0.004, radius) * (1.0 - smoothstep(outer, outer + 0.012, radius));
+  float angularBar = smoothstep(0.08, 0.18, local) * (1.0 - smoothstep(0.82, 0.92, local));
+  float peak = 1.0 - smoothstep(0.0, 0.010, abs(radius - outer));
+  vec3 color = palette(index / max(1.0, visibleBars) - u_time * 0.080, level);
+  return color * angularBar * (radialBar * 0.92 + peak * 0.65);
 }
 
 vec3 particles(vec2 uv) {

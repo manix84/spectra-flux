@@ -1,7 +1,7 @@
 {
   "name": "spectra-flux",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "description": "A full-screen classic audio visualizer inspired by Winamp, MilkDrop, and Windows Media Player.",
   "scripts": {
