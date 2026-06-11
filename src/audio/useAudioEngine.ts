@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AudioFrame } from '../visualizer/types';
 
-const fftSize = 2048;
-const smoothingTimeConstant = 0.76;
+const fftSize = 1024;
+const smoothingTimeConstant = 0.82;
 const beatHoldMs = 220;
-const beatThreshold = 1.35;
+const beatThreshold = 1.18;
 const telemetryIntervalMs = 125;
+const analyserIntervalMs = 1000 / 72;
 
 const emptyFrame: AudioFrame = {
+  version: 0,
   volume: 0,
   bass: 0,
   mid: 0,
@@ -38,8 +40,11 @@ export function useAudioEngine() {
   const objectUrlRef = useRef<string | null>(null);
   const animationRef = useRef<number | null>(null);
   const lowHistoryRef = useRef<number[]>([]);
+  const bassFloorRef = useRef(0.08);
   const lastBeatRef = useRef(0);
+  const lastAnalyserReadRef = useRef(0);
   const lastTelemetryRef = useRef(0);
+  const frameVersionRef = useRef(0);
   const smoothedRef = useRef({ volume: 0, bass: 0, mid: 0, treble: 0 });
   const audioFrameRef = useRef<AudioFrame>(emptyFrame);
   const [audioFrame, setAudioFrame] = useState<AudioFrame>(emptyFrame);
@@ -78,6 +83,13 @@ export function useAudioEngine() {
     const waveform = new Uint8Array(fftSize);
 
     const sample = () => {
+      const now = performance.now();
+      if (now - lastAnalyserReadRef.current < analyserIntervalMs) {
+        animationRef.current = requestAnimationFrame(sample);
+        return;
+      }
+      lastAnalyserReadRef.current = now;
+
       const analyser = analyserRef.current;
       if (!analyser) {
         return;
@@ -97,8 +109,9 @@ export function useAudioEngine() {
       }
 
       const rollingBass = history.reduce((total, value) => total + value, 0) / Math.max(1, history.length);
-      const now = performance.now();
-      const beat = bass > Math.max(0.18, rollingBass * beatThreshold) && now - lastBeatRef.current > beatHoldMs;
+      bassFloorRef.current += (bass - bassFloorRef.current) * (bass > bassFloorRef.current ? 0.012 : 0.045);
+      const beatFloor = Math.max(0.055, Math.min(rollingBass * 0.92, bassFloorRef.current));
+      const beat = bass > beatFloor + 0.035 && bass > beatFloor * beatThreshold && now - lastBeatRef.current > beatHoldMs;
       if (beat) {
         lastBeatRef.current = now;
       }
@@ -114,6 +127,7 @@ export function useAudioEngine() {
       };
 
       audioFrameRef.current = {
+        version: (frameVersionRef.current += 1),
         ...smoothedRef.current,
         beat,
         frequencyBins,

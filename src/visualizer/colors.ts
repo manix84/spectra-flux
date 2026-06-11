@@ -56,6 +56,10 @@ export function getColor(mode: ColorMode, phase: number, intensity = 1) {
   return paletteColor(synthwave, phase, 0.72 + intensity * 0.55);
 }
 
+export function createColorTable(mode: ColorMode, size = 256) {
+  return Array.from({ length: size }, (_, index) => getColor(mode, index / size, 0.95));
+}
+
 export function backgroundGradient(mode: ColorMode) {
   if (mode === 'phosphor') {
     return ['#020802', '#051408', '#0b2111'];

@@ -190,7 +190,7 @@ function App() {
           <span>Mid {Math.round(audioFrame.mid * 100)}%</span>
           <span>Treble {Math.round(audioFrame.treble * 100)}%</span>
           <span>{fps} FPS</span>
-          {audioFrame.beat ? <strong>Beat</strong> : null}
+          <strong className={audioFrame.beat ? 'is-active' : undefined}>Beat</strong>
         </div>
 
         {error ? <p className="error-message">{error}</p> : null}

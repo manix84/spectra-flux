@@ -240,6 +240,11 @@ button {
 }
 
 .telemetry strong {
+  color: var(--text-muted);
+  background: rgb(255 255 255 / 0.07);
+}
+
+.telemetry strong.is-active {
   color: #080b10;
   background: #ffffff;
 }

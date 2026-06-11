@@ -3,6 +3,7 @@ export type VisualMode = 'spectrum' | 'oscilloscope' | 'radial' | 'particles' | 
 export type ColorMode = 'rainbow' | 'synthwave' | 'phosphor' | 'mono' | 'ember';
 
 export interface AudioFrame {
+  version: number;
   volume: number;
   bass: number;
   mid: number;
