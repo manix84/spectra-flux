@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { VisualizerCanvas } from './VisualizerCanvas';
 import { useAudioEngine } from './audio/useAudioEngine';
+import { useScreenWakeLock } from './useScreenWakeLock';
 import type { ColorMode, VisualMode } from './visualizer/types';
 
 const visualModes: Array<{ value: VisualMode; label: string; icon: LucideIcon }> = [
@@ -37,6 +38,8 @@ const colorModes: Array<{ value: ColorMode; label: string }> = [
 ];
 
 function App() {
+  useScreenWakeLock();
+
   const [visualMode, setVisualMode] = useState<VisualMode>('radial');
   const [colorMode, setColorMode] = useState<ColorMode>('synthwave');
   const [sensitivity, setSensitivity] = useState(1.12);
