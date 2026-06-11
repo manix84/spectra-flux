@@ -1,6 +1,6 @@
 # Contributing 💿
 
-Thanks for helping improve Canvas Wave Spectrum.
+Thanks for helping improve SpectraFlux.
 
 ## Local Setup 🛠️
 

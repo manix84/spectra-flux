@@ -80,6 +80,21 @@ function App() {
     [connectFile],
   );
 
+  useEffect(() => {
+    if (!('launchQueue' in window)) {
+      return;
+    }
+
+    window.launchQueue.setConsumer((launchParams) => {
+      const [fileHandle] = launchParams.files;
+      if (!fileHandle) {
+        return;
+      }
+
+      void fileHandle.getFile().then((file) => connectFile(file));
+    });
+  }, [connectFile]);
+
   const handleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       void document.documentElement.requestFullscreen();
@@ -141,7 +156,7 @@ function App() {
               <AudioLines size={22} />
             </div>
             <div>
-              <h1>Canvas Wave Spectrum</h1>
+              <h1>SpectraFlux</h1>
               <p>{inputLabel ? `${inputLabel} · ${status}` : status}</p>
             </div>
           </div>
@@ -166,10 +181,15 @@ function App() {
               <button className="icon-button primary" type="button" onClick={() => fileInputRef.current?.click()} title="Load audio file">
                 <FileAudio size={20} />
               </button>
-              <button className="icon-button" type="button" onClick={() => void connectMicrophone()} title="Use microphone">
+              <button className="icon-button" type="button" onClick={() => void connectMicrophone()} title="Use microphone; browser permission required">
                 <Mic size={20} />
               </button>
-              <button className="icon-button" type="button" onClick={() => void connectSystemAudio()} title="Capture tab or system audio">
+              <button
+                className="icon-button"
+                type="button"
+                onClick={() => void connectSystemAudio()}
+                title="Capture tab or system audio; browser permission required"
+              >
                 <MonitorSpeaker size={20} />
               </button>
               <button className="icon-button" type="button" onClick={() => void togglePlayback()} title={isPlaying ? 'Pause' : 'Play'}>

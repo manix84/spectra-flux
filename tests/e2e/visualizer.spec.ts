@@ -13,7 +13,7 @@ test('renders the visualizer controls and WebGL canvas', async ({ page }) => {
 
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: 'Canvas Wave Spectrum' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'SpectraFlux' })).toBeVisible();
   await expect(page.getByRole('tab', { name: /radial/i })).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('canvas.visualizer-canvas')).toBeVisible();
   await expect(page.getByText('Beat')).toBeVisible();

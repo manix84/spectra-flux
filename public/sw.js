@@ -1,4 +1,4 @@
-const cacheName = 'canvas-wave-spectrum-v1';
+const cacheName = 'spectra-flux-v1';
 const coreAssets = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon.svg'];
 
 self.addEventListener('install', (event) => {

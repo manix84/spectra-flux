@@ -1,6 +1,6 @@
 {
-  "name": "Canvas Wave Spectrum",
-  "short_name": "Wave Spectrum",
+  "name": "SpectraFlux",
+  "short_name": "SpectraFlux",
   "description": "A full-screen real-time audio visualizer inspired by classic music players.",
   "start_url": ".",
   "scope": ".",
@@ -8,6 +8,72 @@
   "background_color": "#070711",
   "theme_color": "#070711",
   "orientation": "any",
+  "categories": ["music", "entertainment", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Open Visualizer",
+      "short_name": "Visualizer",
+      "description": "Open SpectraFlux.",
+      "url": ".",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Load Audio File",
+      "short_name": "Load File",
+      "description": "Open the visualizer ready for an audio file.",
+      "url": ".?source=file",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Microphone Mode",
+      "short_name": "Microphone",
+      "description": "Open the visualizer for microphone input.",
+      "url": ".?source=microphone",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": ".",
+      "accept": {
+        "audio/*": [".aac", ".flac", ".m4a", ".mp3", ".oga", ".ogg", ".opus", ".wav", ".webm"]
+      }
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "SpectraFlux running in radial visualizer mode"
+    },
+    {
+      "src": "screenshots/mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "SpectraFlux portrait controls"
+    }
+  ],
   "icons": [
     {
       "src": "icons/icon.svg",
