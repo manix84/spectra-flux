@@ -1,0 +1,39 @@
+{
+  "name": "canvas-wave-spectrum",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A full-screen classic audio visualizer inspired by Winamp, MilkDrop, and Windows Media Player.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc -b",
+    "version:bump": "node scripts/bump-version.mjs auto",
+    "version:bump:patch": "node scripts/bump-version.mjs patch",
+    "version:bump:minor": "node scripts/bump-version.mjs minor",
+    "version:bump:major": "node scripts/bump-version.mjs major"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
+    "vite": "^7.0.0",
+    "typescript": "^5.8.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "lucide-react": "^0.468.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.29.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "eslint": "^9.29.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^15.15.0",
+    "typescript-eslint": "^8.35.0"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}

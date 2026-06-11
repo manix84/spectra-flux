@@ -1,0 +1,32 @@
+name: Bug report 🐛
+description: Report a reproducible visualizer issue
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the issue clearly.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Open the app
+        2. Select microphone
+        3. Switch to radial mode
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      placeholder: Chrome 126 on macOS
+  - type: textarea
+    id: media
+    attributes:
+      label: Screenshots or recordings
+      description: Drag files here if useful.

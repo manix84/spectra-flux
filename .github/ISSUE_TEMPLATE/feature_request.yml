@@ -1,0 +1,24 @@
+name: Feature request ✨
+description: Suggest a new visual mode, control, or workflow
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Idea
+      description: What should the visualizer do?
+    validations:
+      required: true
+  - type: textarea
+    id: value
+    attributes:
+      label: Why it matters
+      description: How would this improve the experience?
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: References
+      description: Link screenshots, videos, presets, or prior art.
