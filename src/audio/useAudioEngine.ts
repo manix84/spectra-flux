@@ -167,11 +167,17 @@ export function useAudioEngine() {
       objectUrlRef.current = URL.createObjectURL(file);
       audio.src = objectUrlRef.current;
       audio.loop = true;
-      await context.resume();
-      await audio.play();
       setInputLabel(file.name);
-      setStatus('Playing');
+      setStatus('Paused');
       startSampling();
+      await context.resume();
+      try {
+        await audio.play();
+        setStatus('Playing');
+      } catch {
+        setStatus('Paused');
+        setError('Audio was loaded, but playback needs to be started manually.');
+      }
     },
     [ensureContext, startSampling, stopStream],
   );

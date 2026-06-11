@@ -35,8 +35,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Build
-        run: npm run build
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Test
+        run: npm test
 
       - name: Add Pages marker
         run: touch dist/.nojekyll
