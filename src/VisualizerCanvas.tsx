@@ -183,25 +183,62 @@ vec3 radial(vec2 uv) {
   vec2 p = uv * 2.0 - 1.0;
   p.x *= u_resolution.x / u_resolution.y;
   float radius = length(p);
-  float angle = fract(atan(p.y, p.x) / (2.0 * PI) + 0.5 + u_time * 0.032);
-  float skippedBars = 5.0;
-  float bars = u_resolution.x < 760.0 ? 48.0 : 72.0;
-  float visibleBars = bars - skippedBars;
-  float index = floor(angle * bars);
-  float sampleIndex = index + skippedBars;
-  float local = fract(angle * bars);
-  float phase = sampleIndex / max(1.0, bars - 1.0);
+  float baseAngle = atan(p.y, p.x) / (2.0 * PI) + 0.5;
+  float aspectScale = min(u_resolution.x, u_resolution.y) / max(u_resolution.x, u_resolution.y);
+  float baseRadius = mix(0.20, 0.27, aspectScale);
+  vec3 total = vec3(0.0);
 
-  float energy = sampleFreq(phase);
-  float level = saturate(pow(energy, 0.86) + 0.03);
-  float inner = 0.21;
-  float barHeight = 0.04 + level * 0.58;
-  float outer = inner + barHeight;
-  float radialBar = smoothstep(inner - 0.005, inner + 0.004, radius) * (1.0 - smoothstep(outer, outer + 0.012, radius));
-  float angularBar = smoothstep(0.08, 0.18, local) * (1.0 - smoothstep(0.82, 0.92, local));
-  float peak = 1.0 - smoothstep(0.0, 0.010, abs(radius - outer));
-  vec3 color = palette(index / max(1.0, visibleBars) - u_time * 0.080, level);
-  return color * angularBar * (radialBar * 0.92 + peak * 0.65);
+  for (int ghost = 0; ghost < 6; ghost += 1) {
+    float trail = float(ghost);
+    float ghostTime = u_time - trail * (0.105 + u_bass * 0.032);
+    float rotation = ghostTime * (0.034 + u_bass * 0.024) + sin(ghostTime * 0.17) * 0.035;
+    float angle = fract(baseAngle + rotation);
+    float theta = angle * 2.0 * PI;
+    float mirror = abs(fract(angle * 2.0) - 0.5) * 2.0;
+
+    float lowPhase = mix(0.015, 0.13, mirror);
+    float midPhase = mix(0.16, 0.58, fract(angle * 1.37 + sin(theta * 0.31 + ghostTime * 0.19) * 0.08));
+    float highPhase = mix(0.62, 0.98, fract(angle * 3.91 + ghostTime * 0.043));
+    float localBass = sampleFreq(lowPhase);
+    float localMid = sampleFreq(midPhase);
+    float localTreble = sampleFreq(highPhase);
+
+    float bassPulse = (u_bass * 0.34 + localBass * 0.22 + u_beat * 0.12) * (1.0 - trail * 0.075);
+    float midWave =
+      sin(theta * 3.0 + ghostTime * 1.13) * 0.034 +
+      sin(theta * 5.0 - ghostTime * 0.77 + localMid * 2.4) * 0.026 +
+      sin(theta * 9.0 + ghostTime * 0.41) * 0.013;
+    midWave *= 0.42 + u_mid * 1.55 + localMid * 1.15;
+
+    float grain = hash21(vec2(floor(angle * 96.0), floor(ghostTime * 18.0)));
+    float spikeGate = smoothstep(0.82, 0.985, sin(theta * 22.0 + ghostTime * 5.2 + grain * 6.28318) * 0.5 + 0.5);
+    float trebleSpike = pow(saturate(localTreble + u_treble * 0.58), 2.2) * spikeGate * 0.15;
+    float wobble =
+      sin(theta * 13.0 + ghostTime * 1.7) * 0.010 +
+      sin(theta * 17.0 - ghostTime * 1.1 + grain) * 0.007;
+
+    float contour = baseRadius + bassPulse + midWave + trebleSpike + wobble;
+    float width = 0.011 + trail * 0.004 + u_treble * 0.012;
+    float mainLine = exp(-pow(abs(radius - contour) / width, 2.0));
+    float innerLine = exp(-pow(abs(radius - contour * (0.58 + u_mid * 0.055)) / (width * 1.45), 2.0));
+    float outerEcho = exp(-pow(abs(radius - contour * (1.16 + u_bass * 0.10)) / (width * 1.85), 2.0));
+    float spoke = exp(-abs(radius - contour * 0.88) * 12.0) * spikeGate * pow(saturate(localTreble), 1.45);
+    float core = exp(-radius * (6.0 - u_bass * 1.9)) * (0.08 + u_bass * 0.22 + u_beat * 0.08);
+
+    float ghostFade = exp(-trail * 0.47);
+    float intensity = saturate(localBass * 0.38 + localMid * 0.56 + localTreble * 0.32 + u_volume * 0.46);
+    vec3 color = palette(angle + ghostTime * 0.065 + trail * 0.045, intensity);
+    vec3 hot = palette(angle * 1.7 - ghostTime * 0.095 + 0.23, 1.0);
+
+    total += color * mainLine * (1.38 + u_beat * 0.24) * ghostFade;
+    total += color * innerLine * 0.46 * ghostFade;
+    total += hot * outerEcho * 0.26 * ghostFade;
+    total += hot * spoke * 0.20 * ghostFade;
+    total += color * core * ghostFade * 0.28;
+  }
+
+  float vignette = smoothstep(1.25, 0.22, radius);
+  return total * vignette;
 }
 
 vec3 particles(vec2 uv) {
