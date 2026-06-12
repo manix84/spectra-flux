@@ -3,6 +3,10 @@ description: Suggest a new visual mode, control, or workflow
 title: "feat: "
 labels: ["enhancement"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement. Visual references, interaction notes, or examples from other visualizers are especially helpful.
   - type: textarea
     id: idea
     attributes:
@@ -22,3 +26,15 @@ body:
     attributes:
       label: References
       description: Link screenshots, videos, presets, or prior art.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Visual mode
+        - Audio input
+        - Playback controls
+        - PWA / offline behaviour
+        - Performance
+        - Documentation
+        - Other

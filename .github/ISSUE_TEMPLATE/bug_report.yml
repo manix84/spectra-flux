@@ -3,6 +3,10 @@ description: Report a reproducible visualizer issue
 title: "bug: "
 labels: ["bug"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. For security-sensitive issues, please follow `SECURITY.md` instead of opening a public issue.
   - type: textarea
     id: description
     attributes:
@@ -24,9 +28,33 @@ body:
     id: browser
     attributes:
       label: Browser and OS
-      placeholder: Chrome 126 on macOS
+      placeholder: Chrome 126 on macOS 14.5
+    validations:
+      required: true
+  - type: dropdown
+    id: input
+    attributes:
+      label: Audio input type
+      options:
+        - Audio file
+        - Microphone
+        - Tab audio
+        - System audio
+        - No audio / unknown
+    validations:
+      required: true
+  - type: input
+    id: visual-mode
+    attributes:
+      label: Visual mode and colour theme
+      placeholder: Spectrum with synthwave theme
   - type: textarea
     id: media
     attributes:
       label: Screenshots or recordings
       description: Drag files here if useful.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console output
+      description: Paste relevant browser console errors, if any.
